@@ -1,7 +1,10 @@
 from .system_info import SystemInfo
 from .logging import TextColor
+from pathlib import Path
 import sys
 import enum
+import shutil
+import ctypes
 
 PADDING = 40
 
@@ -46,7 +49,7 @@ class Check(object):
     def format_summary(self, padding=PADDING):
         line = self.label.ljust(padding) + icon(self.status)
         if self.status != CheckStatus.OK and self.message:
-            line += "\n   ↳ " + self.message
+            line += "\n  ↳ " + self.message
         return line
 
     def __pre_run__(self):
@@ -113,9 +116,16 @@ class DriverCheck(Check):
 
 class GlxInfoCheck(Check):
     def __init__(self):
-        super(GlxInfoCheck, self).__init__("Checking glxinfo")
+        super(GlxInfoCheck, self).__init__("Checking OpenGL info")
 
     def __run__(self, info):
+        if shutil.which("glxinfo") is None:
+            self.status = CheckStatus.FAIL
+            self.message = (
+                "glxinfo not found. Install it with 'sudo apt install mesa-utils'"
+            )
+            return
+
         info.collect_glx_info()
         gl = info.glxinfo
         if gl is None or gl.renderer is None:
@@ -140,10 +150,46 @@ class GlxInfoCheck(Check):
             or gl.version.minor < 3
         ):
             self.status = CheckStatus.FAIL
-            self.message = "OpenGL version too low: '{}.{}'".format(
-                gl.version.major, gl.version.minor
+            self.message = "OpenGL version too low: {}.{} ({})".format(
+                gl.version.major, gl.version.minor, gl.version.string
             )
             return
+
+        self.status = CheckStatus.OK
+
+
+class OpenGLContextCheck(Check):
+    def __init__(self):
+        super(OpenGLContextCheck, self).__init__("Checking OpenGL context")
+
+    def __run__(self, info):
+        script_dir = Path(__file__).parent.resolve()
+        lib_path = script_dir.joinpath("../bin/libGfxHealthCheck.so").absolute()
+        lib = ctypes.CDLL(lib_path)
+        lib.checkContext.argtypes = []
+        lib.checkContext.restype = ctypes.c_int
+        res = lib.checkContext()
+        if res != 0:
+            self.status = CheckStatus.FAIL
+            self.message = "Failed to create opengl context"
+            return
+
+        self.status = CheckStatus.OK
+
+
+class OpenGLFunctionsLoad(Check):
+    def __init__(self):
+        super(OpenGLFunctionsLoad, self).__init__("Checking OpenGL functions loading")
+
+    def __run__(self, info):
+        # lib = ctypes.CDLL("./bin/libGfxHealthCheck.so")
+        # lib.checkContext.argtypes = []
+        # lib.checkContext.restype = ctypes.c_int
+        # res = lib.checkContext()
+        # if res != 0:
+        #     self.status = CheckStatus.FAIL
+        #     self.message = "Failed to create opengl context"
+        #     return
 
         self.status = CheckStatus.OK
 
@@ -155,3 +201,5 @@ def run_checks():
     GPUCheck().run(info)
     DriverCheck().run(info)
     GlxInfoCheck().run(info)
+    OpenGLContextCheck().run(info)
+    OpenGLFunctionsLoad().run(info)
