@@ -1,0 +1,2 @@
+- check if executed with sudo (for dmesg)
+- 
