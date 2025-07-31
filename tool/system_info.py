@@ -52,14 +52,39 @@ class GpuInfo:
         }
 
 
+class GLVersion(object):
+    def __init__(self):
+        self.string: str = None
+        self.major: int = None
+        self.minor: int = None
+
+    @staticmethod
+    def from_string(version: str) -> "GLVersion":
+        v = GLVersion()
+        v.string = version
+        firstDot = version.find(".")
+        v.major = int(version[firstDot - 1])
+        secondDot = version.find(".", firstDot + 1)
+        v.minor = int(version[secondDot - 1])
+        return v
+
+
+class GlxInfo(object):
+    def __init__(self, vendor=None, renderer=None, version=None):
+        self.vendor: str = vendor
+        self.renderer: str = renderer
+        self.version: GLVersion = GLVersion.from_string(version) if version else None
+
+
 class SystemInfo(object):
     def __init__(self):
         self.os_name: str = None
         self.os_version: str = None
         self.arch: str = None
         self.gpus: List[GpuInfo] = []
+        self.glxinfo = GlxInfo()
 
-    def collect_uname(self):
+    def collect_os_info(self):
         try:
             output = run(["uname", "-rms"])
             parts = output.split()
@@ -101,6 +126,25 @@ class SystemInfo(object):
                     kernel_driver="[error: {}]".format(e),
                 )
             ]
+
+    def collect_glx_info(self):
+        try:
+            output = run(["glxinfo"])
+            for line in output.splitlines():
+                if "OpenGL vendor string" in line:
+                    vendor = line.split(":", 1)[1].strip()
+                elif "OpenGL renderer string" in line:
+                    renderer = line.split(":", 1)[1].strip()
+                elif "OpenGL version string" in line:
+                    version = line.split(":", 1)[1].strip()
+            self.glxinfo = GlxInfo(vendor, renderer, version)
+        except Exception as e:
+            raise e
+            # self.glxinfo = GlxInfo(
+            # vendor="[error: {}]".format(e),
+            # renderer="[error: {}]".format(e),
+            # version=None,
+            # )
 
     def to_dict(self):
         return {
