@@ -95,7 +95,12 @@ class SystemInfo(object):
             self.gpus = [GpuInfo.from_lspci_strings(block) for block in gpu_blocks]
 
         except Exception as e:
-            self.gpus = [GpuInfo(name=f"[error: {e}]", kernel_driver=f"[error: {e}]")]
+            self.gpus = [
+                GpuInfo(
+                    name="[error: {}]".format(e),
+                    kernel_driver="[error: {}]".format(e),
+                )
+            ]
 
     def to_dict(self):
         return {
@@ -104,17 +109,3 @@ class SystemInfo(object):
             "arch": self.arch,
             "gpus": [gpu.to_dict() for gpu in self.gpus],
         }
-
-
-def collect_system_info():
-    sysinfo = SystemInfo()
-    sysinfo.collect_uname()
-    sysinfo.collect_gpu_info()
-
-    dict = sysinfo.to_dict()
-    # dict.update({
-    #     "loaded_modules": run_cmd("lsmod | grep -Ei 'nvidia|amdgpu|i915|nouveau|xe'"),
-    #     "mesa_glxinfo": run_cmd("glxinfo | grep -E 'OpenGL (vendor|renderer|version)'") if is_tool("glxinfo") else "[glxinfo not found]",
-    #     "dmesg_gpu": run_cmd("dmesg | grep -iE 'drm|gpu|amdgpu|nvidia|nouveau|intel|i915|xe'"),
-    # })
-    return dict
