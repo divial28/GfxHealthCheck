@@ -1,5 +1,6 @@
 from .utils import run
 from shutil import which
+from typing import List
 import re
 import subprocess
 
@@ -12,10 +13,10 @@ class GpuInfo:
         kernel_modules=None,
         subsystem=None,
     ):
-        self.description = description
-        self.kernel_module_in_use = kernel_module_in_use
-        self.kernel_modules = kernel_modules or []
-        self.subsystem = subsystem
+        self.description: str = description
+        self.kernel_module_in_use: str = kernel_module_in_use
+        self.kernel_modules: str = kernel_modules or []
+        self.subsystem: str = subsystem
 
     @staticmethod
     def from_lspci_strings(lines: list[str]) -> "GpuInfo":
@@ -53,11 +54,10 @@ class GpuInfo:
 
 class SystemInfo(object):
     def __init__(self):
-        self.os_name = None
-        self.os_version = None
-        self.arch = None
-
-        self.gpus = []  # List of GpuInfo
+        self.os_name: str = None
+        self.os_version: str = None
+        self.arch: str = None
+        self.gpus: List[GpuInfo] = []
 
     def collect_uname(self):
         try:
@@ -110,6 +110,7 @@ def collect_system_info():
     sysinfo = SystemInfo()
     sysinfo.collect_uname()
     sysinfo.collect_gpu_info()
+
     dict = sysinfo.to_dict()
     # dict.update({
     #     "loaded_modules": run_cmd("lsmod | grep -Ei 'nvidia|amdgpu|i915|nouveau|xe'"),
