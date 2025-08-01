@@ -6,11 +6,11 @@ from .utils import run
 
 import sys
 import shutil
-
+import time
 
 lib = Lib()
 
-PADDING = 45
+PADDING = 50
 
 
 def icon_ok():
@@ -26,13 +26,13 @@ def icon_fail():
 
 
 def print_started(label: str):
-    sys.stdout.write(label + " ")
+    sys.stdout.write(" ⏳ {} ".format(label))
     sys.stdout.flush()
 
 
 def print_done(label: str, messages: List[tuple[str, str]]):
     sys.stdout.write("\r" + " " * PADDING + "\r")
-    sys.stdout.write(format_summary(label, messages) + "\n")
+    sys.stdout.write(format_summary(label, messages, PADDING) + "\n")
     sys.stdout.flush()
 
 
@@ -42,12 +42,10 @@ def format_summary(label: str, messages: List[tuple[str, str]], padding=PADDING)
         if msg[0] == "fail":
             icon = icon_fail()
             break
-        else:
-            icon = icon_warn()
-    line = label.ljust(padding, "·") + icon
+    line = " {}  {} ".format(icon, label)
     for msg in messages:
         icon = icon_fail() if msg[0] == "fail" else icon_warn()
-        line += "\n   ↳ {} {}".format(icon, msg[1])
+        line += "\n     ↳ {} {}".format(icon, msg[1])
     return line
 
 
@@ -161,6 +159,7 @@ class OpenGLContextCheck(Check):
         if res.code != 0:
             self.fail(res.message)
             return
+        time.sleep(3)
 
         res = lib.destroyGlxContext()
         if res.code != 0:
@@ -212,6 +211,14 @@ class OpenGLFunctionsCallCheck(Check):
         if res.code != 0:
             self.fail(res.message)
             return
+        res = lib.gladLoadFunctions()
+        if res.code != 0:
+            self.fail(res.message)
+            return
+        res = lib.testBasicOpenGlFunctions()
+        if res.code != 0:
+            fails = res.message.decode().split("|")
+            [self.fail(f) for f in fails]
         res = lib.destroyGlxContext()
         if res.code != 0:
             self.fail(res.message)

@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 struct Result {
     int code;
@@ -18,6 +16,4 @@ int gladGetMinorVersion();
 
 Result testBasicOpenGlFunctions();
 
-#ifdef __cplusplus
 }
-#endif

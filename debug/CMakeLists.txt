@@ -1,0 +1,2 @@
+add_executable(GfxHealthCheckDebug main.cpp)
+target_link_libraries(GfxHealthCheckDebug PRIVATE GfxHealthCheck)
