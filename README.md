@@ -1,14 +1,5 @@
 # GfxHealthCheck
-
-- error context
-- all invalid - None
-
-- check lspci output
-- check packages
-- check glxinfo installed
-- check glxinfo output
-- check mesa libs installed
-- check 
+A tool to collect and analyse different gpu related info and help fix gfx related problems and setup system properly
 
 # requirements
 - python 3.5
@@ -17,7 +8,7 @@
 
 # build
 ```bash
-mkdir build && cd build && cmake .. && make
+mkdir build && cd build && cmake .. && make -j8
 ```
 
 # usage

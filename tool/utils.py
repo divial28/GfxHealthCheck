@@ -1,3 +1,4 @@
+from pathlib import Path
 import subprocess
 
 COMMAND_TIMEOUT = 5
@@ -31,3 +32,8 @@ def run(
         ) from e
 
     return result.stdout.strip()
+
+
+def local_path(path: str) -> Path:
+    script_dir = Path(__file__).parent.resolve()
+    return script_dir.joinpath("..", path).resolve().absolute()

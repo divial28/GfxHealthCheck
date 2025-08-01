@@ -1,60 +1,70 @@
 #include "glxcontext.h"
+#include "../glad/glad.h"
 
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <X11/Xlib.h>
 
-#include <iostream>
+namespace {
+Display*   g_display = nullptr;
+Window     g_win;
+GLXContext g_context;
+} // namespace
 
-int checkContext()
+int createGlxContext(int w, int h)
 {
-    Display* display = XOpenDisplay(nullptr);
-    if (!display) {
-        std::cerr << "Failed to open X display\n";
+    g_display = XOpenDisplay(nullptr);
+    if (!g_display) {
         return 1;
     }
 
-    static int visualAttribs[] = {
-        GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None
-    };
+    static int visualAttribs[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
 
-    int screen = DefaultScreen(display);
-    XVisualInfo* vi = glXChooseVisual(display, screen, visualAttribs);
+    int          screen = DefaultScreen(g_display);
+    XVisualInfo* vi     = glXChooseVisual(g_display, screen, visualAttribs);
     if (!vi) {
-        std::cerr << "No appropriate visual found\n";
-        return 1;
+        return 2;
     }
 
-    GLXContext context = glXCreateContext(display, vi, nullptr, GL_TRUE);
-    if (!context) {
-        std::cerr << "Failed to create GLX context\n";
-        return 1;
+    g_context = glXCreateContext(g_display, vi, nullptr, GL_TRUE);
+    if (!g_context) {
+        return 3;
     }
 
-    Window root = RootWindow(display, vi->screen);
-    Colormap cmap = XCreateColormap(display, root, vi->visual, AllocNone);
+    Window   root = RootWindow(g_display, vi->screen);
+    Colormap cmap = XCreateColormap(g_display, root, vi->visual, AllocNone);
 
     XSetWindowAttributes swa{};
-    swa.colormap = cmap;
+    swa.colormap   = cmap;
     swa.event_mask = ExposureMask | KeyPressMask;
 
-    Window win = XCreateWindow(display, root, 0, 0, 100, 100, 0,
-                               vi->depth, InputOutput, vi->visual,
-                               CWColormap | CWEventMask, &swa);
+    g_win = XCreateWindow(g_display, root, 0, 0, w, h, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask,
+                          &swa);
 
-    XMapWindow(display, win);
-    glXMakeCurrent(display, win, context);
-
-    const GLubyte* renderer = glGetString(GL_RENDERER);
-    const GLubyte* version  = glGetString(GL_VERSION);
-    const GLubyte* vendor  = glGetString(GL_VENDOR);
-
-    std::cout << "OpenGL Renderer: " << renderer << "\n";
-    std::cout << "OpenGL Version: " << version << "\n";
-    std::cout << "OpenGL Vendor: " << vendor << "\n";
-
-    glXDestroyContext(display, context);
-    XDestroyWindow(display, win);
-    XCloseDisplay(display);
+    // XMapWindow(g_display, g_win);
+    glXMakeCurrent(g_display, g_win, g_context);
     return 0;
+}
+
+int destroyGlxContext()
+{
+    glXDestroyContext(g_display, g_context);
+    XDestroyWindow(g_display, g_win);
+    XCloseDisplay(g_display);
+    return 0;
+}
+
+int gladLoadFunctions() 
+{
+    return gladLoadGL();
+}
+
+int gladGetMajorVersion()
+{
+    return GLVersion.major;
+}
+
+int gladGetMinorVersion()
+{
+    return GLVersion.minor;
 }

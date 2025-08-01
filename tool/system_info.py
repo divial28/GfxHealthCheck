@@ -10,12 +10,16 @@ class ErrorContext(object):
         self.opengl_info_parse_error: str = None
         self.opengl_version_parse_error: str = None
 
+        self.uname_output: str = None
+        self.lspci_output: str = None
+        self.glxinfo_output: str = None
+
 
 class GpuInfo:
     def __init__(self):
         self.description: str = None
         self.kernel_module_in_use: str = None
-        self.kernel_modules: str = None
+        self.kernel_modules: List[str] = []
         self.subsystem: str = None
 
     @staticmethod
@@ -74,6 +78,7 @@ class SystemInfo(object):
     def collect_os_info(self, err_ctx: ErrorContext):
         try:
             output = run(["uname", "-rms"])
+            err_ctx.uname_output = output
             parts = output.split()
             if len(parts) == 3:
                 self.os_name = parts[0]
@@ -90,6 +95,7 @@ class SystemInfo(object):
     def collect_gpu_info(self, err_ctx: ErrorContext):
         try:
             output = run(["lspci", "-k"])
+            err_ctx.lspci_output = output
             lines = output.splitlines()
             blocks = []
             current_block = []
@@ -114,11 +120,12 @@ class SystemInfo(object):
             err_ctx.gpu_info_parse_error = str(e)
             self.gpus_info = None
 
-    def collect_glx_info(self, err_ctx: ErrorContext):
+    def collect_opengl_info(self, err_ctx: ErrorContext):
         try:
             info = OpenGLInfo()
             version = OpenGLVersion()
             output = run(["glxinfo"])
+            err_ctx.glxinfo_output = output
             for line in output.splitlines():
                 if "OpenGL vendor string" in line:
                     info.vendor = line.split(":", 1)[1].strip()
@@ -133,4 +140,4 @@ class SystemInfo(object):
             self.opengl_info = info
         except Exception as e:
             err_ctx.opengl_info_parse_error = str(e)
-            self.opengl_info = OpenGLInfo()
+            self.opengl_info = None
