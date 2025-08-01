@@ -4,12 +4,19 @@
 extern "C" {
 #endif
 
-int createGlxContext(int w, int h);
-int destroyGlxContext();
+struct Result {
+    int code;
+    const char* message;
+};
 
-int gladLoadFunctions();
+Result createGlxContext(int w, int h);
+Result destroyGlxContext();
+
+Result gladLoadFunctions();
 int gladGetMajorVersion();
 int gladGetMinorVersion();
+
+Result testBasicOpenGlFunctions();
 
 #ifdef __cplusplus
 }

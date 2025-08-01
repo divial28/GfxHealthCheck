@@ -2,6 +2,7 @@ from typing import List
 from .system_info import SystemInfo, ErrorContext
 from .logging import TextColor
 from .lib import Lib
+from .utils import run
 
 import sys
 import shutil
@@ -29,23 +30,24 @@ def print_started(label: str):
     sys.stdout.flush()
 
 
-def print_done(label: str, errors: List[str], warnings: List[str]):
+def print_done(label: str, messages: List[tuple[str, str]]):
     sys.stdout.write("\r" + " " * PADDING + "\r")
-    sys.stdout.write(format_summary(label, errors, warnings) + "\n")
+    sys.stdout.write(format_summary(label, messages) + "\n")
     sys.stdout.flush()
 
 
-def format_summary(label: str, errors: List[str], warnings: List[str], padding=PADDING):
+def format_summary(label: str, messages: List[tuple[str, str]], padding=PADDING):
     icon = icon_ok()
-    if len(errors) > 0:
-        icon = icon_fail()
-    elif len(warnings) > 0:
-        icon = icon_warn()
+    for msg in messages:
+        if msg[0] == "fail":
+            icon = icon_fail()
+            break
+        else:
+            icon = icon_warn()
     line = label.ljust(padding, "·") + icon
-    for err in errors:
-        line += "\n   ↳ {} {}".format(icon_fail(), err)
-    for warn in warnings:
-        line += "\n   ↳ {} {}".format(icon_warn(), warn)
+    for msg in messages:
+        icon = icon_fail() if msg[0] == "fail" else icon_warn()
+        line += "\n   ↳ {} {}".format(icon, msg[1])
     return line
 
 
@@ -56,22 +58,26 @@ class Check(object):
         label: str,
     ):
         self.label: str = label
-        self.warnings: List[str] = []
-        self.errors: List[str] = []
+        self.messages: List[tuple[str, str]] = []
 
     def run(self, err_ctx: ErrorContext, info: SystemInfo):
         print_started(self.label)
         self.__run__(err_ctx, info)
-        print_done(self.label, self.errors, self.warnings)
+        print_done(self.label, self.messages)
 
     def is_ok(self):
-        return len(self.errors) == 0 and len(self.warnings) == 0
+        return len(self.messages) == 0
 
-    def fail(self, message: str):
-        self.errors.append(message)
+    def fail(self, message: str | bytes):
+        self.__add_message__("fail", message)
 
-    def warn(self, message: str):
-        self.warnings.append(message)
+    def warn(self, message: str | bytes):
+        self.__add_message__("warn", message)
+
+    def __add_message__(self, type: str, message: str | bytes):
+        if isinstance(message, bytes):
+            message = message.decode("utf-8")
+        self.messages.append((type, message))
 
     def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
         raise NotImplementedError("Subclasses must implement __run__()")
@@ -80,7 +86,7 @@ class Check(object):
 class GPUCheck(Check):
 
     def __init__(self):
-        super(GPUCheck, self).__init__("Cheking GPU")
+        super(GPUCheck, self).__init__("Checking GPU")
 
     def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
         info.collect_gpu_info(err_ctx)
@@ -152,31 +158,30 @@ class OpenGLContextCheck(Check):
 
     def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
         res = lib.createGlxContext(1, 1)
-        if res == 1:
-            self.fail("GLX failed to open X display")
-            return
-        elif res == 2:
-            self.fail("GLX couldn't find appropriate visual")
-            return
-        elif res == 3:
-            self.fail("GLX dailed to create OpenGL context")
+        if res.code != 0:
+            self.fail(res.message)
             return
 
-        if lib.destroyGlxContext() != 0:
-            self.fail("GLX failed to destroy OpenGL context")
+        res = lib.destroyGlxContext()
+        if res.code != 0:
+            self.fail(res.message)
 
 
-class OpenGLFunctionsLoad(Check):
+class OpenGLFunctionsLoadCheck(Check):
     def __init__(self):
-        super(OpenGLFunctionsLoad, self).__init__("Checking OpenGL functions loading")
+        super(OpenGLFunctionsLoadCheck, self).__init__(
+            "Checking OpenGL functions loading"
+        )
 
     def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
-        if lib.createGlxContext(1, 1) != 0:
-            self.fail("GLX failed to create OpenGL context")
+        res = lib.createGlxContext(1, 1)
+        if res.code != 0:
+            self.fail(res.message)
             return
 
-        if lib.gladLoadFunctions() == 0:  # glad returns true/false
-            self.fail("GLX failed to load OpenGL functions")
+        res = lib.gladLoadFunctions()
+        if res.code != 0:
+            self.fail(res.message)
 
         major, minor = lib.gladGetVersion()
         if major < 4 and minor < 3:
@@ -191,8 +196,25 @@ class OpenGLFunctionsLoad(Check):
                 )
             )
 
-        if lib.destroyGlxContext() != 0:
-            self.fail("Failed to destroy OpenGL context")
+        res = lib.destroyGlxContext()
+        if res.code != 0:
+            self.fail(res.message)
+
+
+class OpenGLFunctionsCallCheck(Check):
+    def __init__(self):
+        super(OpenGLFunctionsCallCheck, self).__init__(
+            "Checking OpenGL basic function calls"
+        )
+
+    def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
+        res = lib.createGlxContext(1, 1)
+        if res.code != 0:
+            self.fail(res.message)
+            return
+        res = lib.destroyGlxContext()
+        if res.code != 0:
+            self.fail(res.message)
 
 
 def run_checks():
@@ -211,4 +233,5 @@ def run_checks():
     GPUCheck().run(err_ctx, info)
     OpenGLInfoCheck().run(err_ctx, info)
     OpenGLContextCheck().run(err_ctx, info)
-    OpenGLFunctionsLoad().run(err_ctx, info)
+    OpenGLFunctionsLoadCheck().run(err_ctx, info)
+    OpenGLFunctionsCallCheck().run(err_ctx, info)
