@@ -1,79 +1,66 @@
 from .utils import run
-from shutil import which
 from typing import List
 import re
-import subprocess
+
+
+class ErrorContext(object):
+    def __init__(self):
+        self.os_parse_error: str = None
+        self.gpu_info_parse_error: str = None
+        self.opengl_info_parse_error: str = None
+        self.opengl_version_parse_error: str = None
 
 
 class GpuInfo:
-    def __init__(
-        self,
-        description=None,
-        kernel_module_in_use=None,
-        kernel_modules=None,
-        subsystem=None,
-    ):
-        self.description: str = description
-        self.kernel_module_in_use: str = kernel_module_in_use
-        self.kernel_modules: str = kernel_modules or []
-        self.subsystem: str = subsystem
+    def __init__(self):
+        self.description: str = None
+        self.kernel_module_in_use: str = None
+        self.kernel_modules: str = None
+        self.subsystem: str = None
 
     @staticmethod
-    def from_lspci_strings(lines: list[str]) -> "GpuInfo":
-        if not lines:
-            return GpuInfo(description="[missing lspci block]")
-
+    def from_lspci_strings(err_ctx: ErrorContext, lines: list[str]) -> "GpuInfo":
         description = lines[0].strip()
         kv_map = {}
-
         for line in lines[1:]:
             if ":" not in line:
                 continue
             key, val = line.split(":", 1)
             kv_map[key.strip()] = val.strip()
 
-        return GpuInfo(
-            description=description,
-            kernel_module_in_use=kv_map.get("Kernel driver in use"),
-            kernel_modules=[
-                x.strip()
-                for x in kv_map.get("Kernel modules", "").split(",")
-                if x.strip()
-            ],
-            subsystem=kv_map.get("Subsystem"),
-        )
-
-    def to_dict(self):
-        return {
-            "description": self.description,
-            "kernel_module_in_use": self.kernel_module_in_use,
-            "kernel_modules": self.kernel_modules,
-            "subsystem": self.subsystem,
-        }
+        info = GpuInfo()
+        info.description = (description,)
+        info.kernel_module_in_use = (kv_map.get("Kernel driver in use"),)
+        for x in kv_map.get("Kernel modules", "").split(","):
+            info.kernel_modules.append(x.strip())
+        info.subsystem = (kv_map.get("Subsystem"),)
+        return info
 
 
-class GLVersion(object):
+class OpenGLVersion(object):
     def __init__(self):
         self.string: str = None
         self.major: int = None
         self.minor: int = None
 
     @staticmethod
-    def from_string(version: str) -> "GLVersion":
-        v = GLVersion()
-        v.string = version
-        firstDot = version.find(".")
-        v.major = int(version[firstDot - 1])
-        secondDot = version.find(".", firstDot + 1)
-        v.minor = int(version[secondDot - 1])
-        return v
+    def from_string(err_ctx: ErrorContext, version: str) -> tuple[int, int]:
+        try:
+            firstDot = version.find(".")
+            major = int(version[firstDot - 1])
+            secondDot = version.find(".", firstDot + 1)
+            minor = int(version[secondDot - 1])
+            return major, minor
+        except Exception as e:
+            err_ctx.opengl_version_parse_error = str(e)
+            return None, None
 
 
-class GlxInfo(object):
-    def __init__(self, vendor=None, renderer=None, version=None):
-        self.vendor: str = vendor
-        self.renderer: str = renderer
-        self.version: GLVersion = GLVersion.from_string(version) if version else None
+class OpenGLInfo(object):
+    def __init__(self):
+        self.vendor: str = None
+        self.renderer: str = None
+        self.version: OpenGLVersion = None
 
 
 class SystemInfo(object):
@@ -81,10 +68,10 @@ class SystemInfo(object):
         self.os_name: str = None
         self.os_version: str = None
         self.arch: str = None
-        self.gpus: List[GpuInfo] = []
-        self.glxinfo = GlxInfo()
+        self.gpus_info: List[GpuInfo] = None
+        self.opengl_info = None
 
-    def collect_os_info(self):
+    def collect_os_info(self, err_ctx: ErrorContext):
         try:
             output = run(["uname", "-rms"])
             parts = output.split()
@@ -93,15 +80,17 @@ class SystemInfo(object):
                 self.os_version = parts[1]
                 self.arch = parts[2]
             else:
-                self.os_name = self.os_version = self.arch = "[unexpected uname output]"
-        except Exception as e:
-            self.os_name = self.os_version = self.arch = "[error: {}]".format(e)
+                err_ctx.os_parse_error = "unexpected `uname` output: " + output
+                self.os_name = self.os_version = self.arch = None
 
-    def collect_gpu_info(self):
+        except Exception as e:
+            err_ctx.os_parse_error = str(e)
+            self.os_name = self.os_version = self.arch = None
+
+    def collect_gpu_info(self, err_ctx: ErrorContext):
         try:
             output = run(["lspci", "-k"])
             lines = output.splitlines()
-
             blocks = []
             current_block = []
 
@@ -117,39 +106,31 @@ class SystemInfo(object):
                 blocks.append(current_block)
 
             gpu_blocks = [b for b in blocks if any("VGA" in l or "3D" in l for l in b)]
-            self.gpus = [GpuInfo.from_lspci_strings(block) for block in gpu_blocks]
-
-        except Exception as e:
-            self.gpus = [
-                GpuInfo(
-                    name="[error: {}]".format(e),
-                    kernel_driver="[error: {}]".format(e),
-                )
+            self.gpus_info = [
+                GpuInfo.from_lspci_strings(err_ctx, block) for block in gpu_blocks
             ]
 
-    def collect_glx_info(self):
+        except Exception as e:
+            err_ctx.gpu_info_parse_error = str(e)
+            self.gpus_info = None
+
+    def collect_glx_info(self, err_ctx: ErrorContext):
         try:
+            info = OpenGLInfo()
+            version = OpenGLVersion()
             output = run(["glxinfo"])
             for line in output.splitlines():
                 if "OpenGL vendor string" in line:
-                    vendor = line.split(":", 1)[1].strip()
+                    info.vendor = line.split(":", 1)[1].strip()
                 elif "OpenGL renderer string" in line:
-                    renderer = line.split(":", 1)[1].strip()
+                    info.renderer = line.split(":", 1)[1].strip()
                 elif "OpenGL version string" in line:
-                    version = line.split(":", 1)[1].strip()
-            self.glxinfo = GlxInfo(vendor, renderer, version)
+                    version.string = line.split(":", 1)[1].strip()
+            version.major, version.minor = OpenGLVersion.from_string(
+                err_ctx, version.string
+            )
+            info.version = version
+            self.opengl_info = info
         except Exception as e:
-            raise e
-            # self.glxinfo = GlxInfo(
-            # vendor="[error: {}]".format(e),
-            # renderer="[error: {}]".format(e),
-            # version=None,
-            # )
-
-    def to_dict(self):
-        return {
-            "os_name": self.os_name,
-            "os_version": self.os_version,
-            "arch": self.arch,
-            "gpus": [gpu.to_dict() for gpu in self.gpus],
-        }
+            err_ctx.opengl_info_parse_error = str(e)
+            self.opengl_info = OpenGLInfo()

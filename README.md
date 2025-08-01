@@ -1,5 +1,8 @@
 # GfxHealthCheck
 
+- error context
+- all invalid - None
+
 - check lspci output
 - check packages
 - check glxinfo installed

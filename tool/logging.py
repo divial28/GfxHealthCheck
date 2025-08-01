@@ -32,11 +32,3 @@ class TextColor:
     @staticmethod
     def yellow(text):
         return TextColor.YELLOW + text + TextColor.RESET
-
-
-def log(title, content=None):
-    print("=" * 60)
-    print(title)
-    if content:
-        pprint.pprint(content)
-    print("=" * 60)
