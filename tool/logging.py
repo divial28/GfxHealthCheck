@@ -1,4 +1,6 @@
-import pprint
+import sys
+import os
+import tempfile
 
 
 class TextColor:
@@ -32,3 +34,22 @@ class TextColor:
     @staticmethod
     def yellow(text):
         return TextColor.YELLOW + text + TextColor.RESET
+
+
+class Tee:
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data):
+        for stream in self.streams:
+            stream.write(data)
+            stream.flush()
+
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+
+
+def init_file_logger(log_file):
+    sys.stdout = Tee(sys.stdout, log_file)
+    sys.stderr = Tee(sys.stderr, log_file)

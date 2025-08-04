@@ -1,8 +1,17 @@
 from .analyser import run_checks
+from .config import parse_args, create_dirs
+from .logging import init_file_logger
+from .report import create_report
+import tempfile
 
 
 def main():
-    run_checks()
+    log_file = tempfile.NamedTemporaryFile(mode="w+", suffix=".log", prefix="ghc_")
+    init_file_logger(log_file)
+    config = parse_args()
+    create_dirs(config)
+    run_checks(config)
+    create_report(config.temp_dir, log_file)
 
 
 if __name__ == "__main__":

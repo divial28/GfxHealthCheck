@@ -1,3 +1,4 @@
+from .config import Config
 from .utils import run
 from typing import List
 import re
@@ -75,9 +76,9 @@ class SystemInfo(object):
         self.gpus_info: List[GpuInfo] = None
         self.opengl_info = None
 
-    def collect_os_info(self, err_ctx: ErrorContext):
+    def collect_os_info(self, err_ctx: ErrorContext, config: Config):
         try:
-            output = run(["uname", "-rms"])
+            output = run(["uname", "-rms"], log_dir=config.temp_dir)
             err_ctx.uname_output = output
             parts = output.split()
             if len(parts) == 3:
@@ -92,9 +93,9 @@ class SystemInfo(object):
             err_ctx.os_parse_error = str(e)
             self.os_name = self.os_version = self.arch = None
 
-    def collect_gpu_info(self, err_ctx: ErrorContext):
+    def collect_gpu_info(self, err_ctx: ErrorContext, config: Config):
         try:
-            output = run(["lspci", "-k"])
+            output = run(["lspci", "-k"], log_dir=config.temp_dir)
             err_ctx.lspci_output = output
             lines = output.splitlines()
             blocks = []
@@ -120,11 +121,11 @@ class SystemInfo(object):
             err_ctx.gpu_info_parse_error = str(e)
             self.gpus_info = None
 
-    def collect_opengl_info(self, err_ctx: ErrorContext):
+    def collect_opengl_info(self, err_ctx: ErrorContext, config: Config):
         try:
             info = OpenGLInfo()
             version = OpenGLVersion()
-            output = run(["glxinfo"])
+            output = run(["glxinfo"], log_dir=config.temp_dir)
             err_ctx.glxinfo_output = output
             for line in output.splitlines():
                 if "OpenGL vendor string" in line:

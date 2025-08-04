@@ -139,11 +139,11 @@ Result testBasicOpenGlFunctions()
         }
     )glsl";
     static const GLchar* fsSource = R"glsl(
-    #version 430 core
-    out vec4 FragColor;
-    void main() {
-        FragColor = vec4(1.0, 0.5, 0.2, 1.0);
-    }
+        #version 430 core
+        out vec4 FragColor;
+        void main() {
+            FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+        }
     )glsl";
     GLuint               vao = 0, vbo = 0, ebo = 0, shader = 0, vs = 0, fs = 0;
     GLfloat              vertices[] = {-0.5, -0.5, 0.0, 0.5, 0.5, -0.5};

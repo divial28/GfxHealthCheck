@@ -1,7 +1,8 @@
 from typing import List
-from .system_info import SystemInfo, ErrorContext
-from .logging import TextColor
+from .config import Config
 from .lib import Lib
+from .logging import TextColor
+from .system_info import SystemInfo, ErrorContext
 from .utils import run
 
 import sys
@@ -58,9 +59,9 @@ class Check(object):
         self.label: str = label
         self.messages: List[tuple[str, str]] = []
 
-    def run(self, err_ctx: ErrorContext, info: SystemInfo):
+    def run(self, err_ctx: ErrorContext, info: SystemInfo, config: Config):
         print_started(self.label)
-        self.__run__(err_ctx, info)
+        self.__run__(err_ctx, info, config)
         print_done(self.label, self.messages)
 
     def is_ok(self):
@@ -77,7 +78,7 @@ class Check(object):
             message = message.decode("utf-8")
         self.messages.append((type, message))
 
-    def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
+    def __run__(self, err_ctx: ErrorContext, info: SystemInfo, config: Config):
         raise NotImplementedError("Subclasses must implement __run__()")
 
 
@@ -86,8 +87,8 @@ class GPUCheck(Check):
     def __init__(self):
         super(GPUCheck, self).__init__("Checking GPU")
 
-    def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
-        info.collect_gpu_info(err_ctx)
+    def __run__(self, err_ctx: ErrorContext, info: SystemInfo, config: Config):
+        info.collect_gpu_info(err_ctx, config)
 
         if info.gpus_info is None:
             self.fail(err_ctx.gpu_info_parse_error or "No GPUs detected")
@@ -118,14 +119,14 @@ class OpenGLInfoCheck(Check):
     def __init__(self):
         super(OpenGLInfoCheck, self).__init__("Checking OpenGL info")
 
-    def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
+    def __run__(self, err_ctx: ErrorContext, info: SystemInfo, config: Config):
         if shutil.which("glxinfo") is None:
             self.fail(
                 "glxinfo not found. Install it with 'sudo apt install mesa-utils'"
             )
             return
 
-        info.collect_opengl_info(err_ctx)
+        info.collect_opengl_info(err_ctx, config)
         gl = info.opengl_info
         if gl is None:
             self.fail(err_ctx.opengl_info_parse_error or "Failed to parse OpenGL info")
@@ -154,12 +155,11 @@ class OpenGLContextCheck(Check):
     def __init__(self):
         super(OpenGLContextCheck, self).__init__("Checking OpenGL context")
 
-    def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
+    def __run__(self, err_ctx: ErrorContext, info: SystemInfo, config: Config):
         res = lib.createGlxContext(1, 1)
         if res.code != 0:
             self.fail(res.message)
             return
-        time.sleep(3)
 
         res = lib.destroyGlxContext()
         if res.code != 0:
@@ -172,7 +172,7 @@ class OpenGLFunctionsLoadCheck(Check):
             "Checking OpenGL functions loading"
         )
 
-    def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
+    def __run__(self, err_ctx: ErrorContext, info: SystemInfo, config: Config):
         res = lib.createGlxContext(1, 1)
         if res.code != 0:
             self.fail(res.message)
@@ -206,7 +206,7 @@ class OpenGLFunctionsCallCheck(Check):
             "Checking OpenGL basic function calls"
         )
 
-    def __run__(self, err_ctx: ErrorContext, info: SystemInfo):
+    def __run__(self, err_ctx: ErrorContext, info: SystemInfo, config: Config):
         res = lib.createGlxContext(1, 1)
         if res.code != 0:
             self.fail(res.message)
@@ -224,11 +224,11 @@ class OpenGLFunctionsCallCheck(Check):
             self.fail(res.message)
 
 
-def run_checks():
+def run_checks(config: Config):
     TextColor.enable()
     info = SystemInfo()
     err_ctx = ErrorContext()
-    info.collect_os_info(err_ctx)
+    info.collect_os_info(err_ctx, config)
 
     try:
         lib.load()
@@ -237,8 +237,8 @@ def run_checks():
         print("Build helper lib: `mkdir build && cd build && cmake .. && make -j8`")
         exit(1)
 
-    GPUCheck().run(err_ctx, info)
-    OpenGLInfoCheck().run(err_ctx, info)
-    OpenGLContextCheck().run(err_ctx, info)
-    OpenGLFunctionsLoadCheck().run(err_ctx, info)
-    OpenGLFunctionsCallCheck().run(err_ctx, info)
+    GPUCheck().run(err_ctx, info, config)
+    OpenGLInfoCheck().run(err_ctx, info, config)
+    OpenGLContextCheck().run(err_ctx, info, config)
+    OpenGLFunctionsLoadCheck().run(err_ctx, info, config)
+    OpenGLFunctionsCallCheck().run(err_ctx, info, config)
