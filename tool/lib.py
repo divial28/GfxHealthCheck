@@ -27,6 +27,8 @@ class Lib(object):
         self.lib.gladGetMajorVersion.restype = ctypes.c_int
         self.lib.gladGetMinorVersion.argtypes = []
         self.lib.gladGetMinorVersion.restype = ctypes.c_int
+        self.lib.getOpenGLVersionString.argtypes = []
+        self.lib.getOpenGLVersionString.restype = Lib.Result
         self.lib.testBasicOpenGlFunctions.argtypes = []
         self.lib.testBasicOpenGlFunctions.restype = Lib.Result
 
@@ -42,5 +44,8 @@ class Lib(object):
     def gladGetVersion(self) -> Tuple[int, int]:
         return self.lib.gladGetMajorVersion(), self.lib.gladGetMinorVersion()
 
+    def getOpenGLVersionString(self) -> Result:
+        return self.lib.getOpenGLVersionString()
+    
     def testBasicOpenGlFunctions(self) -> Result:
         return self.lib.testBasicOpenGlFunctions()

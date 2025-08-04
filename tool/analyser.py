@@ -182,6 +182,7 @@ class OpenGLFunctionsLoadCheck(Check):
             self.fail(res.message)
 
         major, minor = lib.gladGetVersion()
+        res = lib.getOpenGLVersionString()
         if major < 4 and minor < 3:
             self.fail(
                 "Loaded by glad OpenGL version too low: {}.{}".format(major, minor)
@@ -189,8 +190,10 @@ class OpenGLFunctionsLoadCheck(Check):
         ver = info.opengl_info.version
         if major != ver.major or minor != ver.minor:
             self.warn(
-                "Loaded by glad OpenGL version mismatch:\n\tglad:    {}.{}\n\tglxinfo: {}.{}".format(
-                    major, minor, ver.major, ver.minor
+                "Loaded by glad OpenGL version mismatch:"
+                "\n\tglad:    {}.{}  '{}'"
+                "\n\tglxinfo: {}.{}  '{}'".format(
+                    major, minor, res.message.decode(), ver.major, ver.minor, ver.string
                 )
             )
 

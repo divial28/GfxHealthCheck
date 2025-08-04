@@ -119,6 +119,11 @@ int gladGetMajorVersion() { return GLVersion.major; }
 
 int gladGetMinorVersion() { return GLVersion.minor; }
 
+Result getOpenGLVersionString()
+{
+    return {0, (char*)glGetString(GL_VERSION)};
+}
+
 #define GL_CHECK(stmt)                                                                                                 \
     do {                                                                                                               \
         stmt;                                                                                                          \

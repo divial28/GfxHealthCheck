@@ -47,10 +47,9 @@ class OpenGLVersion(object):
     @staticmethod
     def from_string(err_ctx: ErrorContext, version: str) -> Tuple[int, int]:
         try:
-            firstDot = version.find(".")
-            major = int(version[firstDot - 1])
-            secondDot = version.find(".", firstDot + 1)
-            minor = int(version[secondDot - 1])
+            dot = version.find(".")
+            major = int(version[dot - 1])
+            minor = int(version[dot + 1])
             return major, minor
         except Exception as e:
             err_ctx.opengl_version_parse_error = str(e)

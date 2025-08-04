@@ -46,7 +46,7 @@ def run(
         file_name = os.path.join(log_dir, cmd_name)
         with open(file_name, "a") as f:
             f.write("=" * 40 + "\n")
-            f.write(" ".join(cmd) + "\n")
+            f.write(" ".join(command) + "\n")
             f.write("stdout:\n")
             f.write(result.stdout)
             f.write("stderr:\n")

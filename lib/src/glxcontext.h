@@ -14,6 +14,7 @@ Result gladLoadFunctions();
 int gladGetMajorVersion();
 int gladGetMinorVersion();
 
+Result getOpenGLVersionString();
 Result testBasicOpenGlFunctions();
 
 }
