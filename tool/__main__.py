@@ -13,7 +13,8 @@ def main():
     create_dirs(config)
     run_checks(config)
     create_report(config, log_file)
-    shutil.rmtree(config.temp_dir)
+    if not config.no_clear:
+        shutil.rmtree(config.temp_dir)
 
 
 if __name__ == "__main__":

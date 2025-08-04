@@ -8,6 +8,7 @@ class Config(object):
     def __init__(self):
         self.report_dir = tempfile.gettempdir() # type: str
         self.temp_dir = tempfile.gettempdir() # type: str
+        self.no_clear = False # type: bool
 
 
 def parse_args() -> Config:
@@ -31,9 +32,11 @@ def parse_args() -> Config:
         default=config.temp_dir,
         help="directory to store all temporary files",
     )
+    parser.add_argument("--no-clear", action='store_true', help="dont clear TEMP_DIR after finish")
     args = parser.parse_args()
     config.report_dir = args.report_dir
     config.temp_dir = os.path.join(args.temp_dir, "gfx-health-report")
+    config.no_clear = args.no_clear
     return config
 
 

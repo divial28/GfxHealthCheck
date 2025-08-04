@@ -144,3 +144,9 @@ class SystemInfo(object):
             run(["dmesg"], log_dir=config.temp_dir, sudo=True, timeout=30)
         except Exception as e:
             print(e)
+
+    def collect_packages_info(self, err_ctx: ErrorContext, config: Config):
+        try:
+            run(["apt", "list"], log_dir=config.temp_dir)
+        except Exception as e:
+            print(e)
