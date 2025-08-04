@@ -1,6 +1,4 @@
 import sys
-import os
-import tempfile
 
 
 class TextColor:
@@ -24,15 +22,15 @@ class TextColor:
         TextColor.RESET = ""
 
     @staticmethod
-    def green(text):
+    def green(text) -> str:
         return TextColor.GREEN + text + TextColor.RESET
 
     @staticmethod
-    def red(text):
+    def red(text) -> str:
         return TextColor.RED + text + TextColor.RESET
 
     @staticmethod
-    def yellow(text):
+    def yellow(text) -> str:
         return TextColor.YELLOW + text + TextColor.RESET
 
 

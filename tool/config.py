@@ -6,11 +6,11 @@ import tempfile
 
 class Config(object):
     def __init__(self):
-        self.report_dir: str = tempfile.gettempdir()
-        self.temp_dir: str = tempfile.gettempdir()
+        self.report_dir = tempfile.gettempdir() # type: str
+        self.temp_dir = tempfile.gettempdir() # type: str
 
 
-def parse_args():
+def parse_args() -> Config:
     config = Config()
     parser = argparse.ArgumentParser(
         prog="GfxHealthCheck",

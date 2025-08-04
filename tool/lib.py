@@ -1,4 +1,5 @@
 from .utils import local_path
+from typing import Tuple
 import ctypes
 
 
@@ -38,7 +39,7 @@ class Lib(object):
     def gladLoadFunctions(self) -> int:
         return self.lib.gladLoadFunctions()
 
-    def gladGetVersion(self) -> tuple[int, int]:
+    def gladGetVersion(self) -> Tuple[int, int]:
         return self.lib.gladGetMajorVersion(), self.lib.gladGetMinorVersion()
 
     def testBasicOpenGlFunctions(self) -> Result:

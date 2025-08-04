@@ -1,26 +1,26 @@
 from .config import Config
 from .utils import run
-from typing import List
+from typing import List, Tuple
 import re
 
 
 class ErrorContext(object):
     def __init__(self):
-        self.os_parse_error: str = None
-        self.gpu_info_parse_error: str = None
-        self.opengl_info_parse_error: str = None
-        self.opengl_version_parse_error: str = None
+        self.os_parse_error = None # type: str
+        self.gpu_info_parse_error = None # type: str
+        self.opengl_info_parse_error = None # type: str
+        self.opengl_version_parse_error = None # type: str
 
 
 class GpuInfo:
     def __init__(self):
-        self.description: str = None
-        self.kernel_module_in_use: str = None
-        self.kernel_modules: List[str] = []
-        self.subsystem: str = None
+        self.description = None # type: str
+        self.kernel_module_in_use = None # type: str
+        self.kernel_modules = [] # type: List[str]
+        self.subsystem = None # type: str
 
     @staticmethod
-    def from_lspci_strings(err_ctx: ErrorContext, lines: list[str]) -> "GpuInfo":
+    def from_lspci_strings(err_ctx: ErrorContext, lines: List[str]) -> "GpuInfo":
         description = lines[0].strip()
         kv_map = {}
         for line in lines[1:]:
@@ -40,12 +40,12 @@ class GpuInfo:
 
 class OpenGLVersion(object):
     def __init__(self):
-        self.string: str = None
-        self.major: int = None
-        self.minor: int = None
+        self.string = None # type: str
+        self.major = None # type: int
+        self.minor = None # type: int
 
     @staticmethod
-    def from_string(err_ctx: ErrorContext, version: str) -> tuple[int, int]:
+    def from_string(err_ctx: ErrorContext, version: str) -> Tuple[int, int]:
         try:
             firstDot = version.find(".")
             major = int(version[firstDot - 1])
@@ -59,18 +59,18 @@ class OpenGLVersion(object):
 
 class OpenGLInfo(object):
     def __init__(self):
-        self.vendor: str = None
-        self.renderer: str = None
-        self.version: OpenGLVersion = None
+        self.vendor = None # type: str
+        self.renderer = None # type: str
+        self.version = None # type: OpenGLVersion
 
 
 class SystemInfo(object):
     def __init__(self):
-        self.os_name: str = None
-        self.os_version: str = None
-        self.arch: str = None
-        self.gpus_info: List[GpuInfo] = None
-        self.opengl_info = None
+        self.os_name = None # type: str
+        self.os_version = None # type: str
+        self.arch = None # type: str
+        self.gpus_info = None # type: List[GpuInfo]
+        self.opengl_info = None # type: str
 
     def collect_os_info(self, err_ctx: ErrorContext, config: Config):
         try:

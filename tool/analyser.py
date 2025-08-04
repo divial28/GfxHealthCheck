@@ -1,12 +1,11 @@
-from typing import List
 from .config import Config
 from .lib import Lib
 from .logging import TextColor
 from .system_info import SystemInfo, ErrorContext
 from .utils import run
-
-import sys
+from typing import List, Tuple, Union
 import shutil
+import sys
 import time
 
 lib = Lib()
@@ -14,15 +13,15 @@ lib = Lib()
 PADDING = 50
 
 
-def icon_ok():
+def icon_ok() -> str:
     return TextColor.green("✔")
 
 
-def icon_warn():
+def icon_warn() -> str:
     return TextColor.yellow("⚠️")
 
 
-def icon_fail():
+def icon_fail() -> str:
     return TextColor.red("❌")
 
 
@@ -31,13 +30,13 @@ def print_started(label: str):
     sys.stdout.flush()
 
 
-def print_done(label: str, messages: List[tuple[str, str]]):
+def print_done(label: str, messages: List[Tuple[str, str]]):
     sys.stdout.write("\r" + " " * PADDING + "\r")
     sys.stdout.write(format_summary(label, messages, PADDING) + "\n")
     sys.stdout.flush()
 
 
-def format_summary(label: str, messages: List[tuple[str, str]], padding=PADDING):
+def format_summary(label: str, messages: List[Tuple[str, str]], padding=PADDING):
     icon = icon_ok()
     for msg in messages:
         if msg[0] == "fail":
@@ -56,24 +55,24 @@ class Check(object):
         self,
         label: str,
     ):
-        self.label: str = label
-        self.messages: List[tuple[str, str]] = []
+        self.label = label # type: str
+        self.messages = [] # type: List[tuple[str, str]]
 
     def run(self, err_ctx: ErrorContext, info: SystemInfo, config: Config):
         print_started(self.label)
         self.__run__(err_ctx, info, config)
         print_done(self.label, self.messages)
 
-    def is_ok(self):
+    def is_ok(self) -> bool:
         return len(self.messages) == 0
 
-    def fail(self, message: str | bytes):
+    def fail(self, message: Union[str, bytes]):
         self.__add_message__("fail", message)
 
-    def warn(self, message: str | bytes):
+    def warn(self, message: Union[str, bytes]):
         self.__add_message__("warn", message)
 
-    def __add_message__(self, type: str, message: str | bytes):
+    def __add_message__(self, type: str, message: Union[str, bytes]):
         if isinstance(message, bytes):
             message = message.decode("utf-8")
         self.messages.append((type, message))

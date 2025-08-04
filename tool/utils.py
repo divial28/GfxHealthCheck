@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 import subprocess
 import os
 import shutil
@@ -6,7 +7,7 @@ import tarfile
 
 
 def run(
-    cmd: list[str],
+    cmd: List[str],
     shell: bool = False,
     check: bool = True,
     universal_newlines: bool = True,
@@ -55,9 +56,9 @@ def run(
     return result.stdout.strip()
 
 
-def local_path(path: str) -> Path:
+def local_path(path: str) -> str:
     script_dir = Path(__file__).parent.resolve()
-    return script_dir.joinpath("..", path).resolve().absolute()
+    return str(script_dir.joinpath("..", path).resolve().absolute())
 
 
 def force_mkdir(path: str):
