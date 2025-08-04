@@ -2,8 +2,7 @@ from pathlib import Path
 import subprocess
 import os
 import shutil
-
-COMMAND_TIMEOUT = 5
+import tarfile
 
 
 def run(
@@ -12,16 +11,23 @@ def run(
     check: bool = True,
     universal_newlines: bool = True,
     log_dir: str = None,
+    sudo: bool = False,
+    timeout: int = 5,
 ) -> str:
     try:
+        if sudo:
+            print("running '{}' with sudo".format(" ".join(cmd)))
+            command = ["sudo", *cmd]
+        else:
+            command = cmd
         result = subprocess.run(
-            cmd,
+            command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=universal_newlines,
             check=check,
             shell=shell,
-            timeout=COMMAND_TIMEOUT,
+            timeout=timeout,
         )
     except subprocess.CalledProcessError as e:
         raise RuntimeError(
@@ -31,7 +37,7 @@ def run(
         ) from e
     except subprocess.TimeoutExpired as e:
         raise RuntimeError(
-            "Command '{}' hanged for '{}'".format(" ".join(cmd), COMMAND_TIMEOUT)
+            "Command '{}' hanged for {} seconds".format(" ".join(cmd), timeout)
         ) from e
 
     if not log_dir is None:
@@ -61,3 +67,8 @@ def force_mkdir(path: str):
         else:
             os.remove(path)
     os.makedirs(path)
+
+
+def create_acrhive(src_dir: str, dest_path: str):
+    with tarfile.open(dest_path, "w:gz") as tar:
+        tar.add(src_dir, arcname=os.path.basename(src_dir))

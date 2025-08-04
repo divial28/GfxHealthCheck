@@ -33,7 +33,7 @@ def parse_args():
     )
     args = parser.parse_args()
     config.report_dir = args.report_dir
-    config.temp_dir = args.temp_dir + "gfx-health"
+    config.temp_dir = os.path.join(args.temp_dir, "gfx-health-report")
     return config
 
 

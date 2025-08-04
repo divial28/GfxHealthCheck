@@ -242,3 +242,5 @@ def run_checks(config: Config):
     OpenGLContextCheck().run(err_ctx, info, config)
     OpenGLFunctionsLoadCheck().run(err_ctx, info, config)
     OpenGLFunctionsCallCheck().run(err_ctx, info, config)
+
+    info.collect_journal_info(err_ctx, config)

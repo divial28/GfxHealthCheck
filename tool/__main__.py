@@ -3,6 +3,7 @@ from .config import parse_args, create_dirs
 from .logging import init_file_logger
 from .report import create_report
 import tempfile
+import shutil
 
 
 def main():
@@ -11,7 +12,8 @@ def main():
     config = parse_args()
     create_dirs(config)
     run_checks(config)
-    create_report(config.temp_dir, log_file)
+    create_report(config, log_file)
+    shutil.rmtree(config.temp_dir)
 
 
 if __name__ == "__main__":

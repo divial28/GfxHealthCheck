@@ -11,10 +11,6 @@ class ErrorContext(object):
         self.opengl_info_parse_error: str = None
         self.opengl_version_parse_error: str = None
 
-        self.uname_output: str = None
-        self.lspci_output: str = None
-        self.glxinfo_output: str = None
-
 
 class GpuInfo:
     def __init__(self):
@@ -142,3 +138,9 @@ class SystemInfo(object):
         except Exception as e:
             err_ctx.opengl_info_parse_error = str(e)
             self.opengl_info = None
+
+    def collect_journal_info(self, err_ctx: ErrorContext, config: Config):
+        try:
+            run(["dmesg"], log_dir=config.temp_dir, sudo=True, timeout=30)
+        except Exception as e:
+            print(e)
