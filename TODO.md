@@ -1,3 +1,8 @@
+crucial:
+- move to makefile or even just g++
+- add std c++11
+- adapt to python 3.2.3 or maybe even use python 2?
+
 most important:
 - add as much logs as possible
   - journalctl (?)
